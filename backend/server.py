@@ -16,10 +16,10 @@ delivery = OAuth2Session(r'YjcxYmU3MDJlYzg2ZjUyOTE2MmM5YzgwNDM4OGFjMGM5', token=
 users = {}
 with open('data/cuisines.json') as f:
     yummly_to_delivery_cuisines = json.load(f)
-# with open('data/recipes.json') as f:
-#     recipes = json.load(f)
-# with open('data/cuisines.json') as f:
-#     cuisine_map = json.load(f)
+with open('data/recipes.json') as f:
+    recipes = json.load(f)
+with open('data/cuisines.json') as f:
+    cuisine_map = json.load(f)
 
 
 @app.route('/survey', methods=['GET', 'POST'])
@@ -40,23 +40,30 @@ def survey():
 
             chosen_recipes.append(recipe)
         img_urls = [r['smallImageUrls'][0] for r in chosen_recipes]
-        users[_id] = recipes
+        print "STORING ID: ", _id
+
+        users[_id] = chosen_recipes
         data = {
             'id': _id,
             'urls': img_urls
         }
         return jsonify(data)
     else:
-        _id = request.args.get('id')
-        latitude = request.args.get('latitude')
-        longitude = request.args.get('longitude')
-        result = request.args.get('result').split(',')
+        print users
+        _id = uuid.UUID(request.form['id'])
+        latitude = request.form['latitude']
+        longitude = request.form['longitude']
+        print _id
+        print latitude
+        print longitude
+        result = request.form['result'].split(',')
 
-        liked_cuisines = set([])
+        liked_cuisines = []
         for i, boolean in enumerate(result):
             if boolean == '1':
                 recipe = users[_id][i]
-                liked_cuisines.add(recipe['cuisine'])
+                if 'cuisine' in recipe['attributes']:
+                    liked_cuisines += recipe['attributes']['cuisine']
         del users[_id]
         # return redirect(url_for('get_restaurants', latitude=latitude, longitude=longitude, liked_cuisines=liked_cuisines))
         return 'NIGGA YOU CrAY'
