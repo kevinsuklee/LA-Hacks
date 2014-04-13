@@ -26,3 +26,6 @@ proguard/
 *.classpath
 project.properties
 *.settings
+
+#Mac OS Files
+.DS_Store
