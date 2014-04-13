@@ -1,19 +1,24 @@
-from flask import Flask, jsonify, request
-from requests_oauthlib import OAuth2Session
+from flask import Flask, jsonify, request, url_for
+# from requests_oauthlib import OAuth2Session
+from rauth import OAuth2Session
 import uuid
 import random
 import json
+import requests
+import string
 
 app = Flask(__name__)
-delivery = OAuth2Session(r'YjcxYmU3MDJlYzg2ZjUyOTE2MmM5YzgwNDM4OGFjMGM5', token=r'66iJJMLEs5jZlGBVINWzvMldxJc6yCEDsqmc2Qhn')
+# my_token = {'access_token' : r''}#r'66iJJMLEs5jZlGBVINWzvMldxJc6yCEDsqmc2Qhn'}
+# delivery = OAuth2Session(r'YjcxYmU3MDJlYzg2ZjUyOTE2MmM5YzgwNDM4OGFjMGM5', None, None)
+CLIENTID = r'YjcxYmU3MDJlYzg2ZjUyOTE2MmM5YzgwNDM4OGFjMGM5'
 
 users = {}
 with open('data/cuisines.json') as f:
     yummly_to_delivery_cuisines = json.load(f)
-with open('data/recipes.json') as f:
-    recipes = json.load(f)
-with open('data/cuisines.json') as f:
-    cuisine_map = json.load(f)
+# with open('data/recipes.json') as f:
+#     recipes = json.load(f)
+# with open('data/cuisines.json') as f:
+#     cuisine_map = json.load(f)
 
 
 @app.route('/survey', methods=['GET'])
@@ -45,24 +50,71 @@ def survey():
         longitude = request.args.get('longitude')
         result = request.args.get('result').split(',')
 
-        liked_cuisine = []
+        liked_cuisines = set([])
         for i, boolean in enumerate(result):
             if boolean == '1':
                 recipe = users[_id][i]
-                liked_cuisine.append(recipe['cuisine'])
+                liked_cuisines.add(recipe['cuisine'])
         del users[_id]
-        return get_restaurants(_id, latitude, longitude, liked_cuisine)
+        # return redirect(url_for('get_restaurants', latitude=latitude, longitude=longitude, liked_cuisines=liked_cuisines))
+        return get_restaurants(latitude, longitude, liked_cuisines)
 
+@app.route('/fuck')
+def get_restaurants(latitude, longitude, liked_cuisines):
+    def cuisine_translate(cuisine):
+        if cuisine in yummly_to_delivery_cuisines:
+            return yummly_to_delivery_cuisines[cuisine]
 
-def get_restaurants(latitude, longitude, liked_cuisine):
-    """
-    Query for the
-    """
-    payload = {'latitude': latitude, 'longitude':longitude}
-    delivery.get
+    def url_fix(staging_url):
+        return string.replace(staging_url, "staging.delivery.com/", "m.delivery.com/#!/merchants/")
+    payload = {
+        'client_id': CLIENTID,
+        'latitude': latitude,
+        'longitude': longitude,
+        'merchant_type': 'R',
+    }
+    
+    url = 'http://sandbox.delivery.com/merchant/search/delivery'
 
+    json_response = requests.get(url, params=payload).json()
+    liked_merchants_data = {"merchants": []}
+    liked_merchants = liked_merchants_data["merchants"]
+    merchants = json_response["merchants"]
+    # print merchants
+
+    liked_cuisines_mapped = set(map(cuisine_translate, liked_cuisines))
+
+    for m in merchants:
+        m_id = m["id"]
+        summary = m["summary"]
+        cuisines = set(summary["cuisines"])
+        m_url = summary["url"]["complete"]
+        if len(set.intersection(cuisines, liked_cuisines_mapped)) > 0:
+            merchant_dict = {}
+            merchant_dict["id"] = m_id
+            merchant_dict["name"] = summary["name"]
+            merchant_dict["cuisines"] = list(cuisines)
+            merchant_dict["url"] = url_fix(m_url)
+            liked_merchants.append(merchant_dict)
+            # print "YES"
+            # print cuisines
+            # print liked_cuisines_mapped
+    # return (json.dumps(liked_merchants_data))
+    return jsonify(json.loads(json.dumps(liked_merchants_data)))
+    # return liked_merchants_data
+        # break
+    # python_response = json.loads(str(json_response))
+    # print python_response
+
+@app.route('/test')
+def test():
+
+    lat = '34.068921'
+    lon = '-118.445181'
+    liked_cuis = set(["Japanese", "Chinese", "Indian"])
+    return get_restaurants(lat, lon, liked_cuis)
 
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(debug=True)
