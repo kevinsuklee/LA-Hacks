@@ -1,8 +1,11 @@
 package com.example.lahacks;
 
+import java.util.ArrayList;
+
 import android.os.Bundle;
 import android.app.Activity;
 import android.content.Intent;
+import android.graphics.Bitmap;
 import android.view.Menu;
 import android.view.View;
 import android.widget.Button;
@@ -13,6 +16,7 @@ public class MainActivity extends Activity {
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
+		
 		
 		Button startButton = (Button) findViewById(R.id.StartButton);
 		View.OnClickListener handler = new View.OnClickListener() {
@@ -31,5 +35,7 @@ public class MainActivity extends Activity {
 		getMenuInflater().inflate(R.menu.main, menu);
 		return true;
 	}
+	
+
 
 }
