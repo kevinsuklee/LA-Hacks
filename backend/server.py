@@ -1,16 +1,17 @@
-from flask import Flask, jsonify, request, url_for
-# from requests_oauthlib import OAuth2Session
-from rauth import OAuth2Session
+from flask import Flask, jsonify, request
+from requests_oauthlib import OAuth2Session
+import requests
 import uuid
 import random
 import json
-import requests
+import os
 import string
+os.environ['DEBUG'] = '1'
 
 app = Flask(__name__)
-# my_token = {'access_token' : r''}#r'66iJJMLEs5jZlGBVINWzvMldxJc6yCEDsqmc2Qhn'}
-# delivery = OAuth2Session(r'YjcxYmU3MDJlYzg2ZjUyOTE2MmM5YzgwNDM4OGFjMGM5', None, None)
 CLIENTID = r'YjcxYmU3MDJlYzg2ZjUyOTE2MmM5YzgwNDM4OGFjMGM5'
+delivery = OAuth2Session(r'YjcxYmU3MDJlYzg2ZjUyOTE2MmM5YzgwNDM4OGFjMGM5', token={'access_token': r'66iJJMLEs5jZlGBVINWzvMldxJc6yCEDsqmc2Qhn'})
+
 
 users = {}
 with open('data/cuisines.json') as f:
@@ -21,7 +22,7 @@ with open('data/cuisines.json') as f:
 #     cuisine_map = json.load(f)
 
 
-@app.route('/survey', methods=['GET'])
+@app.route('/survey', methods=['GET', 'POST'])
 def survey():
     """
     Creates a uuid for the user and send them the recipes pictures
@@ -34,8 +35,9 @@ def survey():
         chosen_recipes = []
         for c in rand_cuisines:
             recipe = random.choice(recipes[c]['matches'])
-            while 'yummly' in recipe['smallImageUrls'][0]:
+            while 'yummly' in recipe['smallImageUrls'][0] or recipe in chosen_recipes:
                 recipe = random.choice(recipes[c]['matches'])
+
             chosen_recipes.append(recipe)
         img_urls = [r['smallImageUrls'][0] for r in chosen_recipes]
         users[_id] = recipes
@@ -57,6 +59,8 @@ def survey():
                 liked_cuisines.add(recipe['cuisine'])
         del users[_id]
         # return redirect(url_for('get_restaurants', latitude=latitude, longitude=longitude, liked_cuisines=liked_cuisines))
+        return 'NIGGA YOU CrAY'
+
         return get_restaurants(latitude, longitude, liked_cuisines)
 
 @app.route('/fuck')
@@ -73,7 +77,7 @@ def get_restaurants(latitude, longitude, liked_cuisines):
         'longitude': longitude,
         'merchant_type': 'R',
     }
-    
+
     url = 'http://sandbox.delivery.com/merchant/search/delivery'
 
     json_response = requests.get(url, params=payload).json()
@@ -117,4 +121,4 @@ def test():
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host='0.0.0.0', port=80, debug=True)
